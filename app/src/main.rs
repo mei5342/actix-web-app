@@ -1,29 +1,22 @@
-use actix_web::{web, App, HttpServer, Responder};
-use std::sync::Mutex;
-
-struct AppStateWithCounter {
-    counter: Mutex<i32>,
-}
-
-async fn index(data: web::Data<AppStateWithCounter>) -> String {
-    let mut counter = data.counter.lock().unwrap();
-    *counter += 1;
-
-    format!("Request number: {counter}")
-}
+use actix_web::{web, App, HttpServer, HttpResponse};
+use std::io;
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    let counter = web::Data::new(AppStateWithCounter {
-        counter: Mutex::new(0),
-    });
+async fn main() -> io::Result<()> {
+    let srv = HttpServer::new(|| App::new().route("/", web::get().to(HttpResponse::Ok)))
+        .bind(("0.0.0.0", 8080))?
+        .shutdown_timeout(60)
+        .run();
+    
+    let srv_handle = srv.handle();
 
-    HttpServer::new(move || {
-        App::new()
-            .app_data(counter.clone())
-            .route("/", web::get().to(index))
-    })
-    .bind(("0.0.0.0", 8080))?
-    .run()
-    .await
+    tokio::spawn(srv);
+
+    srv_handle.pause().await;
+
+    srv_handle.resume().await;
+
+    srv_handle.stop(true).await;
+
+    Ok(())
 }
