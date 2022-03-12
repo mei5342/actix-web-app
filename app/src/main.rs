@@ -13,7 +13,8 @@ async fn stream() -> HttpResponse {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| App::new().service(stream))
-        .bind(("0.0.0.0", 8080))?
+        .bind(("wsl2のIPアドレス", 8080))? // wsl2用の設定
+        // 参考：https://rcmdnk.com/blog/2021/03/01/computer-windows-network/
         .run()
         .await
 }
